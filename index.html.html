@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditSafe - Food Safety Audit App</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f4f2ed; color: #1a1a18; -webkit-font-smoothing: antialiased; }
+.app { max-width: 500px; margin: 0 auto; background: #ffffff; min-height: 100vh; box-shadow: 0 0 40px rgba(0,0,0,0.08); }
+
+/* HEADER */
+.header { background: #ffffff; border-bottom: 1px solid #e6e3db; padding: 14px 16px; position: sticky; top: 0; z-index: 100; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.logo { font-size: 18px; font-weight: 700; color: #111111; }
+.logo span { color: #16a373; }
+.score-pill { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: #e0f5ed; color: #0a6647; }
+.rest-label { font-size: 11px; color: #999999; margin-bottom: 7px; min-height: 16px; }
+.prog-row { display: flex; justify-content: space-between; font-size: 11px; color: #bbbbbb; margin-bottom: 4px; }
+.prog-track { height: 4px; background: #f0ede5; border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 4px; background: #16a373; border-radius: 4px; width: 0%; transition: width 0.3s; }
+
+/* TABS */
+.tab-bar { display: flex; background: #ffffff; border-bottom: 1px solid #e6e3db; position: sticky; top: 90px; z-index: 99; }
+.tab { flex: 1; padding: 12px 6px; text-align: center; font-size: 13px; font-weight: 500; color: #999999; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab.active { color: #16a373; border-bottom-color: #16a373; }
+
+/* PAGES */
+.page { display: none; }
+.page.active { display: block; }
+
+/* SETUP */
+.setup-wrap { padding: 20px 16px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: #666666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.field input, .field select { width: 100%; padding: 11px 13px; border: 1px solid #dedad2; border-radius: 10px; font-size: 14px; color: #1a1a18; background: #faf9f6; outline: none; font-family: inherit; appearance: none; -webkit-appearance: none; }
+.field input:focus, .field select:focus { border-color: #16a373; background: #ffffff; }
+.start-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: #16a373; color: #ffffff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 4px; font-family: inherit; }
+.start-btn:hover { background: #129060; }
+.start-btn:active { transform: scale(0.98); }
+
+/* PLACEHOLDER */
+.placeholder { padding: 60px 24px; text-align: center; }
+.placeholder h3 { font-size: 15px; font-weight: 600; color: #333333; margin-bottom: 8px; }
+.placeholder p { font-size: 13px; color: #999999; margin-bottom: 20px; line-height: 1.5; }
+.ghost-btn { padding: 11px 24px; border: 1px solid #dedad2; border-radius: 10px; background: #faf9f6; color: #333333; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.ghost-btn:hover { background: #f0ede5; }
+
+/* CHECKLIST */
+.section-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #faf9f6; border-top: 1px solid #e6e3db; border-bottom: 1px solid #e6e3db; cursor: pointer; }
+.section-title { font-size: 14px; font-weight: 600; color: #1a1a18; }
+.section-right { display: flex; align-items: center; gap: 8px; }
+.section-score { font-size: 12px; color: #999999; }
+.chevron { font-size: 10px; color: #bbbbbb; display: inline-block; transition: transform 0.2s; }
+.chevron.open { transform: rotate(180deg); }
+.items-list { background: #ffffff; }
+.item { padding: 14px 16px; border-bottom: 1px solid #f4f2ed; display: flex; gap: 12px; align-items: flex-start; }
+.item-left { flex: 1; }
+.item-critical { display: inline-block; font-size: 10px; font-weight: 700; color: #8b2a0e; background: #fde8e0; padding: 2px 7px; border-radius: 10px; margin-bottom: 5px; }
+.item-q { font-size: 13px; color: #1a1a18; line-height: 1.45; }
+.item-note { width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #dedad2; border-radius: 8px; background: #faf9f6; font-size: 12px; color: #1a1a18; font-family: inherit; resize: none; outline: none; display: none; }
+.item-note:focus { border-color: #16a373; }
+.btn-group { display: flex; gap: 5px; flex-shrink: 0; padding-top: 2px; }
+.btn-check { width: 38px; height: 38px; border-radius: 9px; border: 1px solid #dedad2; background: #faf9f6; cursor: pointer; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-family: inherit; color: #999999; }
+.btn-check:hover { border-color: #bbbbbb; }
+.btn-check.pass { background: #e0f5ed; border-color: #4db88a; color: #0a6647; }
+.btn-check.fail { background: #fde8e0; border-color: #e0845a; color: #7a2010; }
+.btn-check.skip { background: #f0ede5; border-color: #cccccc; color: #888888; }
+
+/* SUMMARY */
+.summary { display: none; margin: 16px; }
+.summary.show { display: block; }
+.summary-card { background: #ffffff; border: 1px solid #e6e3db; border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.summary-title { font-size: 16px; font-weight: 700; color: #1a1a18; margin-bottom: 16px; }
+.score-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; gap: 8px; }
+.score-ring { width: 110px; height: 110px; border-radius: 50%; border: 4px solid #16a373; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-ring.warn { border-color: #e09020; }
+.score-ring.fail { border-color: #d93a2b; }
+.score-number { font-size: 34px; font-weight: 700; color: #1a1a18; line-height: 1; }
+.score-denom { font-size: 13px; color: #999999; }
+.verdict { font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 20px; }
+.verdict.good { background: #e0f5ed; color: #0a6647; }
+.verdict.warn { background: #fef3e0; color: #7a4d00; }
+.verdict.bad { background: #fde8e0; color: #7a2010; }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.stat-box { background: #faf9f6; border-radius: 10px; padding: 12px 8px; text-align: center; }
+.stat-num { font-size: 22px; font-weight: 700; }
+.stat-lbl { font-size: 11px; color: #999999; margin-top: 2px; }
+.violations-title { font-size: 11px; font-weight: 600; color: #999999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.violation { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f4f2ed; font-size: 13px; color: #1a1a18; line-height: 1.4; }
+.violation:last-child { border-bottom: none; }
+.v-dot { width: 7px; height: 7px; border-radius: 50%; background: #d93a2b; flex-shrink: 0; margin-top: 5px; }
+.v-dot.crit { background: #8b1c0a; }
+.v-note { font-size: 11px; color: #aaaaaa; font-style: italic; margin-top: 2px; }
+.no-violations { font-size: 13px; color: #16a373; font-weight: 600; text-align: center; padding: 12px 0; }
+.report-btn { width: 100%; padding: 13px; border: none; border-radius: 11px; background: #16a373; color: #ffffff; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 8px; font-family: inherit; }
+.report-btn:hover { background: #129060; }
+.secondary-btn { width: 100%; padding: 13px; border: 1px solid #dedad2; border-radius: 11px; background: #faf9f6; color: #333333; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.secondary-btn:hover { background: #f0ede5; }
+
+/* HISTORY */
+.history-empty { padding: 60px 24px; text-align: center; font-size: 13px; color: #999999; line-height: 1.6; }
+.hist-card { margin: 10px 16px; background: #ffffff; border: 1px solid #e6e3db; border-radius: 14px; padding: 14px 16px; }
+.hist-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.hist-name { font-size: 14px; font-weight: 600; color: #1a1a18; }
+.hist-score { font-size: 15px; font-weight: 700; }
+.hist-meta { font-size: 11px; color: #aaaaaa; margin-bottom: 8px; }
+.hist-bar-track { height: 3px; background: #f0ede5; border-radius: 3px; overflow: hidden; }
+.hist-bar-fill { height: 3px; border-radius: 3px; }
+
+/* PRINT */
+@media print {
+  .header, .tab-bar, .section-header, .items-list, .placeholder, .report-btn, .secondary-btn { display: none !important; }
+  .summary { display: block !important; margin: 0; }
+  .summary-card { border: 1px solid #ccc; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-row">
+      <div class="logo">Audit<span>Safe</span></div>
+      <div class="score-pill" id="livePill">Score: —</div>
+    </div>
+    <div class="rest-label" id="restLabel">No audit in progress</div>
+    <div class="prog-row">
+      <span id="progText">0 of 0 answered</span>
+      <span id="progPct">0%</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <div class="tab active" id="tab-audit" onclick="showTab('audit')">Audit</div>
+    <div class="tab" id="tab-setup" onclick="showTab('setup')">Setup</div>
+    <div class="tab" id="tab-history" onclick="showTab('history')">Reports</div>
+  </div>
+
+  <!-- PAGE: AUDIT -->
+  <div class="page active" id="page-audit">
+    <div class="placeholder" id="placeholder">
+      <h3>No active audit</h3>
+      <p>Go to the Setup tab, enter the restaurant details, and tap Start Audit.</p>
+      <button class="ghost-btn" onclick="showTab('setup')">Go to Setup</button>
+    </div>
+    <div id="checklist" style="display:none;"></div>
+    <div class="summary" id="summary">
+      <div class="summary-card">
+        <div class="summary-title" id="reportTitle">Audit Report</div>
+        <div class="score-wrap">
+          <div class="score-ring" id="scoreRing">
+            <div class="score-number" id="scoreNumber">—</div>
+            <div class="score-denom">/ 100</div>
+          </div>
+          <div class="verdict" id="verdictBadge"></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-num" id="statPass" style="color:#16a373;">0</div><div class="stat-lbl">Passed</div></div>
+          <div class="stat-box"><div class="stat-num" id="statFail" style="color:#d93a2b;">0</div><div class="stat-lbl">Failed</div></div>
+          <div class="stat-box"><div class="stat-num" id="statNA">0</div><div class="stat-lbl">N/A</div></div>
+        </div>
+        <div id="violationsWrap"></div>
+      </div>
+      <button class="report-btn" onclick="window.print()">Download / Print Report</button>
+      <button class="secondary-btn" onclick="resetAudit()">Start New Audit</button>
+    </div>
+  </div>
+
+  <!-- PAGE: SETUP -->
+  <div class="page" id="page-setup">
+    <div class="setup-wrap">
+      <div class="field">
+        <label>Restaurant Name</label>
+        <input type="text" id="inpName" placeholder="e.g. Al Noor Kitchen" />
+      </div>
+      <div class="field">
+        <label>Branch / Location</label>
+        <input type="text" id="inpLocation" placeholder="e.g. Karachi, Main Branch" />
+      </div>
+      <div class="field">
+        <label>Auditor Name</label>
+        <input type="text" id="inpAuditor" placeholder="Your name" />
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="inpDate" />
+      </div>
+      <div class="field">
+        <label>Audit Type</label>
+        <select id="inpType">
+          <option value="Full Hygiene Audit">Full Hygiene Audit</option>
+          <option value="HACCP Compliance">HACCP Compliance Check</option>
+          <option value="Halal Verification">Halal Verification Audit</option>
+          <option value="Pre-Inspection Check">Pre-Inspection Check</option>
+        </select>
+      </div>
+      <button class="start-btn" onclick="startAudit()">Start Audit</button>
+    </div>
+  </div>
+
+  <!-- PAGE: HISTORY -->
+  <div class="page" id="page-history">
+    <div id="historyList">
+      <div class="history-empty">No completed audits yet.<br>Complete your first audit to see reports here.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+var SECTIONS = [
+  {
+    title: "Personal Hygiene",
+    items: [
+      { q: "All staff wearing clean uniforms and hair nets", critical: true },
+      { q: "Handwashing stations stocked with soap and paper towels", critical: true },
+      { q: "No jewellery or watches worn during food handling", critical: false },
+      { q: "Staff observed washing hands after handling raw food", critical: true },
+      { q: "No signs of illness in food-handling staff on duty", critical: true }
+    ]
+  },
+  {
+    title: "Temperature Control",
+    items: [
+      { q: "Fridge temperatures recorded between 1 and 5 degrees C", critical: true },
+      { q: "Freezer temperatures at or below -18 degrees C", critical: true },
+      { q: "Hot holding foods maintained above 63 degrees C", critical: true },
+      { q: "Temperature logs completed and up to date", critical: false },
+      { q: "Probe thermometer available and calibrated", critical: false }
+    ]
+  },
+  {
+    title: "Food Storage",
+    items: [
+      { q: "Raw and cooked foods stored separately", critical: true },
+      { q: "All food stored off the floor (minimum 15cm)", critical: false },
+      { q: "Food labelled with preparation and expiry dates", critical: false },
+      { q: "FIFO (first in first out) system in use", critical: false },
+      { q: "No expired or damaged products found in storage", critical: true }
+    ]
+  },
+  {
+    title: "Kitchen Cleanliness",
+    items: [
+      { q: "Cooking surfaces clean and free of food debris", critical: false },
+      { q: "Chopping boards colour-coded and in good condition", critical: true },
+      { q: "Cleaning schedule posted and signed daily", critical: false },
+      { q: "Pest control measures in place and documented", critical: true },
+      { q: "Waste bins covered and emptied regularly", critical: false }
+    ]
+  },
+  {
+    title: "Halal Compliance",
+    items: [
+      { q: "Halal certification visible and currently valid", critical: true },
+      { q: "No cross-contamination risk with non-halal products", critical: true },
+      { q: "Halal and non-halal utensils kept strictly separate", critical: true },
+      { q: "Supplier halal certificates on file and accessible", critical: false }
+    ]
+  }
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────
+var state = {};
+var auditInfo = {};
+var history = [];
+var openSections = {};
+
+// ── INIT ──────────────────────────────────────────────────────────────
+document.getElementById("inpDate").value = new Date().toISOString().split("T")[0];
+
+// ── TABS ──────────────────────────────────────────────────────────────
+function showTab(name) {
+  var names = ["audit", "setup", "history"];
+  for (var i = 0; i < names.length; i++) {
+    var n = names[i];
+    var t = document.getElementById("tab-" + n);
+    var p = document.getElementById("page-" + n);
+    if (t) { t.className = "tab" + (n === name ? " active" : ""); }
+    if (p) { p.className = "page" + (n === name ? " active" : ""); }
+  }
+}
+
+// ── START AUDIT ───────────────────────────────────────────────────────
+function startAudit() {
+  var name     = document.getElementById("inpName").value.trim()     || "Unnamed Restaurant";
+  var location = document.getElementById("inpLocation").value.trim() || "";
+  var auditor  = document.getElementById("inpAuditor").value.trim()  || "Auditor";
+  var date     = document.getElementById("inpDate").value            || new Date().toISOString().split("T")[0];
+  var type     = document.getElementById("inpType").value;
+
+  auditInfo = { name: name, location: location, auditor: auditor, date: date, type: type };
+  state = {};
+  openSections = {};
+
+  for (var si = 0; si < SECTIONS.length; si++) {
+    openSections[si] = (si === 0);
+    for (var ii = 0; ii < SECTIONS[si].items.length; ii++) {
+      state[si + "_" + ii] = null;
+    }
+  }
+
+  renderChecklist();
+
+  document.getElementById("placeholder").style.display = "none";
+  document.getElementById("checklist").style.display   = "block";
+  document.getElementById("summary").className         = "summary";
+  document.getElementById("restLabel").textContent     = name + (location ? " — " + location : "") + "  ·  " + date;
+
+  updateProgress();
+  showTab("audit");
+}
+
+// ── RENDER CHECKLIST ──────────────────────────────────────────────────
+function renderChecklist() {
+  var el = document.getElementById("checklist");
+  el.innerHTML = "";
+
+  for (var si = 0; si < SECTIONS.length; si++) {
+    var sec  = SECTIONS[si];
+    var wrap = document.createElement("div");
+
+    // section header
+    var hdr  = document.createElement("div");
+    hdr.className = "section-header";
+    hdr.setAttribute("data-si", si);
+    hdr.innerHTML =
+      '<span class="section-title">' + sec.title + '</span>' +
+      '<div class="section-right">' +
+        '<span class="section-score" id="ss-' + si + '"></span>' +
+        '<span class="chevron' + (openSections[si] ? " open" : "") + '" id="chev-' + si + '">&#9660;</span>' +
+      '</div>';
+    hdr.onclick = (function(s) { return function() { toggleSection(s); }; })(si);
+
+    // items container
+    var itemsDiv = document.createElement("div");
+    itemsDiv.className = "items-list";
+    itemsDiv.id = "items-" + si;
+    itemsDiv.style.display = openSections[si] ? "block" : "none";
+
+    for (var ii = 0; ii < sec.items.length; ii++) {
+      var item = sec.items[ii];
+      var row  = document.createElement("div");
+      row.className = "item";
+      row.innerHTML =
+        '<div class="item-left">' +
+          (item.critical ? '<span class="item-critical">&#9888; Critical</span><br>' : '') +
+          '<span class="item-q">' + item.q + '</span>' +
+          '<textarea class="item-note" id="note-' + si + '_' + ii + '" rows="2" placeholder="Describe the violation..."></textarea>' +
+        '</div>' +
+        '<div class="btn-group">' +
+          '<button class="btn-check" id="bp-' + si + '_' + ii + '" onclick="setAns(' + si + ',' + ii + ',\'pass\')">&#10003;</button>' +
+          '<button class="btn-check" id="bf-' + si + '_' + ii + '" onclick="setAns(' + si + ',' + ii + ',\'fail\')">&#10007;</button>' +
+          '<button class="btn-check" id="bn-' + si + '_' + ii + '" onclick="setAns(' + si + ',' + ii + ',\'na\')">&#8212;</button>' +
+        '</div>';
+      itemsDiv.appendChild(row);
+    }
+
+    wrap.appendChild(hdr);
+    wrap.appendChild(itemsDiv);
+    el.appendChild(wrap);
+  }
+}
+
+// ── TOGGLE SECTION ────────────────────────────────────────────────────
+function toggleSection(si) {
+  openSections[si] = !openSections[si];
+  var itemsDiv = document.getElementById("items-" + si);
+  var chev     = document.getElementById("chev-" + si);
+  if (itemsDiv) itemsDiv.style.display = openSections[si] ? "block" : "none";
+  if (chev) chev.className = "chevron" + (openSections[si] ? " open" : "");
+}
+
+// ── SET ANSWER ────────────────────────────────────────────────────────
+function setAns(si, ii, val) {
+  var key = si + "_" + ii;
+  state[key] = (state[key] === val) ? null : val;
+
+  var bmap = { pass: "bp", fail: "bf", na: "bn" };
+  var cmap = { pass: "pass", fail: "fail", na: "skip" };
+  for (var v in bmap) {
+    var btn = document.getElementById(bmap[v] + "-" + key);
+    if (btn) btn.className = "btn-check" + (state[key] === v ? " " + cmap[v] : "");
+  }
+
+  var noteEl = document.getElementById("note-" + key);
+  if (noteEl) noteEl.style.display = (state[key] === "fail") ? "block" : "none";
+
+  updateProgress();
+  updateSectionScore(si);
+}
+
+// ── UPDATE SECTION SCORE ──────────────────────────────────────────────
+function updateSectionScore(si) {
+  var p = 0, f = 0;
+  for (var ii = 0; ii < SECTIONS[si].items.length; ii++) {
+    var v = state[si + "_" + ii];
+    if (v === "pass") p++;
+    else if (v === "fail") f++;
+  }
+  var el = document.getElementById("ss-" + si);
+  if (el) el.textContent = (p || f) ? (p + "✓  " + f + "✗") : "";
+}
+
+// ── UPDATE PROGRESS ───────────────────────────────────────────────────
+function updateProgress() {
+  var keys     = Object.keys(state);
+  var total    = keys.length;
+  var answered = 0, passed = 0;
+  for (var i = 0; i < keys.length; i++) {
+    if (state[keys[i]] !== null) answered++;
+    if (state[keys[i]] === "pass") passed++;
+  }
+  var pct = total ? Math.round(answered / total * 100) : 0;
+
+  document.getElementById("progText").textContent = answered + " of " + total + " answered";
+  document.getElementById("progPct").textContent  = pct + "%";
+  document.getElementById("progFill").style.width = pct + "%";
+
+  var scorable = 0;
+  for (var i = 0; i < keys.length; i++) {
+    if (state[keys[i]] === "pass" || state[keys[i]] === "fail") scorable++;
+  }
+  if (scorable > 0) {
+    var score = Math.round(passed / scorable * 100);
+    var pill  = document.getElementById("livePill");
+    pill.textContent = "Score: " + score;
+    if (score >= 80) { pill.style.background = "#e0f5ed"; pill.style.color = "#0a6647"; }
+    else if (score >= 60) { pill.style.background = "#fef3e0"; pill.style.color = "#7a4d00"; }
+    else { pill.style.background = "#fde8e0"; pill.style.color = "#7a2010"; }
+  }
+
+  if (answered === total && total > 0) buildSummary();
+}
+
+// ── BUILD SUMMARY ─────────────────────────────────────────────────────
+function buildSummary() {
+  var pass = 0, fail = 0, na = 0;
+  var violations = [];
+  var keys = Object.keys(state);
+
+  for (var k = 0; k < keys.length; k++) {
+    var parts = keys[k].split("_");
+    var si    = parseInt(parts[0]);
+    var ii    = parseInt(parts[1]);
+    var v     = state[keys[k]];
+    var item  = SECTIONS[si].items[ii];
+    var note  = (document.getElementById("note-" + keys[k]) || {}).value || "";
+
+    if (v === "pass")  pass++;
+    else if (v === "fail") { fail++; violations.push({ q: item.q, critical: item.critical, section: SECTIONS[si].title, note: note }); }
+    else if (v === "na") na++;
+  }
+
+  var scorable = pass + fail;
+  var score    = scorable ? Math.round(pass / scorable * 100) : 0;
+
+  // score ring
+  document.getElementById("scoreNumber").textContent = score;
+  var ring = document.getElementById("scoreRing");
+  ring.className = "score-ring" + (score >= 80 ? "" : score >= 60 ? " warn" : " fail");
+
+  // verdict
+  var vb = document.getElementById("verdictBadge");
+  if (score >= 80)      { vb.textContent = "PASS — Good Standard";            vb.className = "verdict good"; }
+  else if (score >= 60) { vb.textContent = "MARGINAL — Improvement Needed";   vb.className = "verdict warn"; }
+  else                  { vb.textContent = "FAIL — Urgent Action Required";    vb.className = "verdict bad"; }
+
+  // stats
+  document.getElementById("statPass").textContent = pass;
+  document.getElementById("statFail").textContent = fail;
+  document.getElementById("statNA").textContent   = na;
+
+  // report title
+  document.getElementById("reportTitle").textContent =
+    auditInfo.name + (auditInfo.location ? " — " + auditInfo.location : "") +
+    "  ·  " + auditInfo.date;
+
+  // violations
+  var wrap = document.getElementById("violationsWrap");
+  if (violations.length === 0) {
+    wrap.innerHTML = '<div class="no-violations">No violations found — Excellent!</div>';
+  } else {
+    var html = '<div class="violations-title">Violations Found (' + violations.length + ')</div>';
+    for (var i = 0; i < violations.length; i++) {
+      var viol = violations[i];
+      html +=
+        '<div class="violation">' +
+          '<div class="v-dot' + (viol.critical ? " crit" : "") + '"></div>' +
+          '<div>' +
+            '<strong>' + viol.section + ':</strong> ' + viol.q +
+            (viol.note ? '<div class="v-note">' + viol.note + '</div>' : '') +
+          '</div>' +
+        '</div>';
+    }
+    wrap.innerHTML = html;
+  }
+
+  // show summary
+  document.getElementById("summary").className = "summary show";
+
+  // save to history
+  history.unshift({ name: auditInfo.name, location: auditInfo.location, date: auditInfo.date, type: auditInfo.type, score: score, pass: pass, fail: fail });
+  renderHistory();
+
+  // scroll to summary
+  setTimeout(function() {
+    var el = document.getElementById("summary");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }, 200);
+}
+
+// ── RENDER HISTORY ────────────────────────────────────────────────────
+function renderHistory() {
+  var el = document.getElementById("historyList");
+  if (history.length === 0) {
+    el.innerHTML = '<div class="history-empty">No completed audits yet.<br>Complete your first audit to see reports here.</div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < history.length; i++) {
+    var h     = history[i];
+    var color = h.score >= 80 ? "#16a373" : h.score >= 60 ? "#e09020" : "#d93a2b";
+    html +=
+      '<div class="hist-card">' +
+        '<div class="hist-top">' +
+          '<span class="hist-name">' + h.name + '</span>' +
+          '<span class="hist-score" style="color:' + color + '">' + h.score + '/100</span>' +
+        '</div>' +
+        '<div class="hist-meta">' + h.date + (h.location ? ' &middot; ' + h.location : '') + ' &middot; ' + h.type + ' &middot; ' + h.pass + ' passed, ' + h.fail + ' failed</div>' +
+        '<div class="hist-bar-track"><div class="hist-bar-fill" style="width:' + h.score + '%;background:' + color + ';height:3px"></div></div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────
+function resetAudit() {
+  state      = {};
+  auditInfo  = {};
+  openSections = {};
+
+  document.getElementById("placeholder").style.display = "block";
+  document.getElementById("checklist").style.display   = "none";
+  document.getElementById("summary").className         = "summary";
+  document.getElementById("restLabel").textContent     = "No audit in progress";
+  document.getElementById("livePill").textContent      = "Score: —";
+  document.getElementById("livePill").style.background = "#e0f5ed";
+  document.getElementById("livePill").style.color      = "#0a6647";
+  document.getElementById("progText").textContent      = "0 of 0 answered";
+  document.getElementById("progPct").textContent       = "0%";
+  document.getElementById("progFill").style.width      = "0%";
+
+  showTab("setup");
+}
+</script>
+</body>
+</html>
