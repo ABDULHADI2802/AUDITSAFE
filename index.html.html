@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditSafe — Food Safety Audit App</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh}
+  .app{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;position:relative;box-shadow:0 0 40px rgba(0,0,0,0.08)}
+
+  /* HEADER */
+  .header{background:#fff;border-bottom:1px solid #e8e6df;padding:16px;position:sticky;top:0;z-index:10}
+  .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .logo{font-size:17px;font-weight:600;color:#1a1a18;letter-spacing:-0.3px}
+  .logo span{color:#1D9E75}
+  .score-pill{font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#E1F5EE;color:#085041;transition:all .3s}
+  .restaurant-name{font-size:12px;color:#888;margin-bottom:8px}
+  .progress-label{display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:4px}
+  .progress-bar{height:4px;background:#f0ede6;border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:#1D9E75;border-radius:2px;transition:width .3s}
+
+  /* TABS */
+  .tab-bar{display:flex;border-bottom:1px solid #e8e6df;background:#fff;position:sticky;top:73px;z-index:9}
+  .tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-weight:500}
+  .tab.active{color:#1D9E75;border-bottom-color:#1D9E75}
+  .page{display:none;padding-bottom:40px}
+  .page.active{display:block}
+
+  /* SETUP */
+  .info-row{padding:16px}
+  .info-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+  .info-lbl{font-size:12px;color:#666;font-weight:500}
+  .info-input{font-size:14px;padding:10px 12px;border:1px solid #e0ddd6;border-radius:10px;background:#faf9f6;color:#1a1a18;width:100%;outline:none;transition:border .15s}
+  .info-input:focus{border-color:#1D9E75;background:#fff}
+  .start-btn{margin:4px 16px 0;width:calc(100% - 32px);padding:14px;border-radius:12px;border:none;background:#1D9E75;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s}
+  .start-btn:hover{opacity:.9}
+  .start-btn:active{transform:scale(0.98)}
+
+  /* SECTIONS */
+  .section{margin-bottom:1px}
+  .section-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#faf9f6;cursor:pointer;border-top:1px solid #e8e6df;border-bottom:1px solid #e8e6df;transition:background .15s}
+  .section-header:hover{background:#f0ede6}
+  .section-title{font-size:14px;font-weight:600;color:#1a1a18}
+  .section-meta{display:flex;align-items:center;gap:8px}
+  .section-score{font-size:12px;color:#888}
+  .chevron{font-size:10px;color:#aaa;transition:transform .2s;display:inline-block}
+  .chevron.open{transform:rotate(180deg)}
+  .items{background:#fff}
+  .item{padding:14px 16px;border-bottom:1px solid #f0ede6;display:flex;gap:12px;align-items:flex-start}
+  .item:last-child{border-bottom:none}
+  .item-left{flex:1;min-width:0}
+  .item-critical{font-size:10px;font-weight:700;color:#993C1D;background:#FAECE7;padding:2px 7px;border-radius:10px;display:inline-block;margin-bottom:5px;letter-spacing:0.3px}
+  .item-q{font-size:13px;color:#1a1a18;line-height:1.45}
+  .btn-group{display:flex;gap:5px;flex-shrink:0;margin-top:2px}
+  .btn-audit{width:38px;height:38px;border-radius:9px;border:1px solid #e0ddd6;background:#faf9f6;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-weight:600}
+  .btn-audit:hover{border-color:#bbb}
+  .btn-audit.pass{background:#E1F5EE;border-color:#5DCAA5;color:#085041}
+  .btn-audit.fail{background:#FAECE7;border-color:#F0997B;color:#712B13}
+  .btn-audit.na{background:#f0ede6;border-color:#ccc;color:#888}
+  .note-input{width:100%;margin-top:8px;font-size:12px;padding:8px 10px;border:1px solid #e0ddd6;border-radius:8px;background:#faf9f6;color:#1a1a18;resize:none;font-family:inherit;outline:none}
+  .note-input:focus{border-color:#1D9E75}
+
+  /* PLACEHOLDER */
+  .placeholder{padding:48px 24px;text-align:center}
+  .placeholder p{font-size:14px;color:#888;margin-bottom:6px}
+  .placeholder small{font-size:12px;color:#bbb;display:block;margin-bottom:20px}
+  .ghost-btn{padding:11px 28px;border-radius:10px;border:1px solid #e0ddd6;background:#faf9f6;color:#1a1a18;font-size:14px;font-weight:500;cursor:pointer}
+  .ghost-btn:hover{background:#f0ede6}
+
+  /* SUMMARY */
+  .summary{display:none;margin:16px;background:#fff;border:1px solid #e8e6df;border-radius:16px;padding:20px;margin-bottom:24px}
+  .summary.show{display:block}
+  .summary-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#1a1a18}
+  .score-ring-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;gap:6px}
+  .score-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #1D9E75}
+  .score-circle.warn{border-color:#EF9F27}
+  .score-circle.danger{border-color:#E24B4A}
+  .score-num{font-size:32px;font-weight:700;color:#1a1a18;line-height:1}
+  .score-lbl{font-size:12px;color:#888;margin-top:2px}
+  .score-verdict{font-size:13px;font-weight:600;padding:4px 14px;border-radius:20px}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+  .stat{background:#faf9f6;border-radius:10px;padding:12px 8px;text-align:center}
+  .stat-n{font-size:22px;font-weight:700;color:#1a1a18}
+  .stat-l{font-size:11px;color:#888;margin-top:2px}
+  .failures-title{font-size:12px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+  .fail-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f0ede6;font-size:13px;color:#1a1a18;line-height:1.4}
+  .fail-item:last-child{border-bottom:none}
+  .fail-dot{width:7px;height:7px;border-radius:50%;background:#E24B4A;flex-shrink:0;margin-top:5px}
+  .fail-dot.crit{background:#993C1D}
+  .failures-wrap{margin-bottom:16px}
+  .action-btn{width:100%;padding:13px;border-radius:11px;border:none;background:#1D9E75;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;margin-bottom:8px}
+  .action-btn:hover{opacity:.9}
+  .action-btn.sec{background:#faf9f6;color:#1a1a18;border:1px solid #e0ddd6}
+  .action-btn.sec:hover{background:#f0ede6}
+
+  /* HISTORY */
+  .history-empty{padding:48px 24px;text-align:center;font-size:13px;color:#888}
+  .history-card{margin:10px 16px;background:#fff;border:1px solid #e8e6df;border-radius:14px;padding:14px 16px;cursor:pointer;transition:background .15s}
+  .history-card:hover{background:#faf9f6}
+  .hc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .hc-name{font-size:14px;font-weight:600;color:#1a1a18}
+  .hc-score{font-size:15px;font-weight:700}
+  .hc-meta{font-size:11px;color:#aaa}
+  .hc-bar{height:3px;background:#f0ede6;border-radius:2px;margin-top:8px;overflow:hidden}
+  .hc-bar-fill{height:100%;border-radius:2px}
+
+  /* FOOTER */
+  .footer{text-align:center;padding:20px;font-size:11px;color:#bbb;border-top:1px solid #f0ede6;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">Audit<span>Safe</span></div>
+      <span class="score-pill" id="live-score">Score: —</span>
+    </div>
+    <div class="restaurant-name" id="rest-label">No audit in progress</div>
+    <div class="progress-label"><span id="prog-text">0 of 0 answered</span><span id="prog-pct">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('audit')">Audit</div>
+    <div class="tab" onclick="switchTab('setup')">Setup</div>
+    <div class="tab" onclick="switchTab('history')">Reports</div>
+  </div>
+
+  <!-- AUDIT PAGE -->
+  <div class="page active" id="page-audit">
+    <div class="placeholder" id="audit-placeholder">
+      <p>No active audit</p>
+      <small>Go to Setup to start a new restaurant audit</small>
+      <button class="ghost-btn" onclick="switchTab('setup')">Start new audit →</button>
+    </div>
+    <div id="checklist" style="display:none"></div>
+    <div class="summary" id="summary">
+      <div class="summary-title">Audit Report</div>
+      <div class="score-ring-wrap">
+        <div class="score-circle" id="score-circle">
+          <span class="score-num" id="final-score">—</span>
+          <span class="score-lbl">/ 100</span>
+        </div>
+        <span class="score-verdict" id="score-verdict"></span>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" id="stat-pass" style="color:#1D9E75">0</div><div class="stat-l">Passed</div></div>
+        <div class="stat"><div class="stat-n" id="stat-fail" style="color:#E24B4A">0</div><div class="stat-l">Failed</div></div>
+        <div class="stat"><div class="stat-n" id="stat-na">0</div><div class="stat-l">N/A</div></div>
+      </div>
+      <div class="failures-wrap" id="failures-wrap"></div>
+      <button class="action-btn" onclick="printReport()">Download / Print Report</button>
+      <button class="action-btn sec" onclick="resetAudit()">Start new audit</button>
+    </div>
+  </div>
+
+  <!-- SETUP PAGE -->
+  <div class="page" id="page-setup">
+    <div class="info-row">
+      <div class="info-field">
+        <label class="info-lbl">Restaurant name</label>
+        <input class="info-input" id="inp-name" placeholder="e.g. Al Noor Kitchen" />
+      </div>
+      <div class="info-field">
+        <label class="info-lbl">Auditor name</label>
+        <input class="info-input" id="inp-auditor" placeholder="Your name" />
+      </div>
+      <div class="info-field">
+        <label class="info-lbl">Location / Branch</label>
+        <input class="info-input" id="inp-location" placeholder="e.g. Karachi, Main Branch" />
+      </div>
+      <div class="info-field">
+        <label class="info-lbl">Date</label>
+        <input class="info-input" id="inp-date" type="date" />
+      </div>
+      <div class="info-field">
+        <label class="info-lbl">Audit type</label>
+        <select class="info-input" id="inp-type">
+          <option value="full">Full hygiene audit</option>
+          <option value="haccp">HACCP compliance</option>
+          <option value="halal">Halal verification</option>
+        </select>
+      </div>
+    </div>
+    <button class="start-btn" onclick="startAudit()">Start audit →</button>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div class="page" id="page-history">
+    <div id="history-list"><div class="history-empty">No completed audits yet.<br>Complete your first audit to see reports here.</div></div>
+  </div>
+
+  <div class="footer">AuditSafe &nbsp;·&nbsp; Built for food safety professionals &nbsp;·&nbsp; By Abdul Hadi</div>
+</div>
+
+<script>
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('inp-date').value = today;
+
+const SECTIONS = [
+  {
+    title: 'Personal hygiene',
+    items: [
+      {q:'All staff wearing clean uniforms and hair nets', critical:true},
+      {q:'Handwashing stations stocked with soap and paper towels', critical:true},
+      {q:'No jewellery or watches worn during food handling', critical:false},
+      {q:'Staff observed washing hands after handling raw food', critical:true},
+      {q:'No signs of illness in food-handling staff on duty', critical:true},
+    ]
+  },
+  {
+    title: 'Temperature control',
+    items: [
+      {q:'Fridge temperatures recorded between 1°C and 5°C', critical:true},
+      {q:'Freezer temperatures at or below -18°C', critical:true},
+      {q:'Hot holding foods maintained above 63°C', critical:true},
+      {q:'Temperature logs completed and up to date', critical:false},
+      {q:'Probe thermometer available and calibrated', critical:false},
+    ]
+  },
+  {
+    title: 'Food storage',
+    items: [
+      {q:'Raw and cooked foods stored separately', critical:true},
+      {q:'All food stored off the floor (minimum 15cm)', critical:false},
+      {q:'Food labelled with preparation and expiry dates', critical:false},
+      {q:'FIFO (first in, first out) system in use', critical:false},
+      {q:'No expired or damaged products in storage', critical:true},
+    ]
+  },
+  {
+    title: 'Kitchen cleanliness',
+    items: [
+      {q:'Cooking surfaces clean and free of food debris', critical:false},
+      {q:'Chopping boards colour-coded and in good condition', critical:true},
+      {q:'Cleaning schedule posted and signed daily', critical:false},
+      {q:'Pest control measures in place and documented', critical:true},
+      {q:'Waste bins covered and emptied regularly', critical:false},
+    ]
+  },
+  {
+    title: 'Halal compliance',
+    items: [
+      {q:'Halal certification visible and currently valid', critical:true},
+      {q:'No cross-contamination risk with non-halal products', critical:true},
+      {q:'Halal and non-halal utensils kept strictly separate', critical:true},
+      {q:'Supplier halal certificates on file and accessible', critical:false},
+    ]
+  },
+];
+
+let state = {};
+let auditInfo = {};
+let history = [];
+
+function switchTab(t) {
+  ['audit','setup','history'].forEach((name,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', name===t);
+    document.getElementById('page-'+name).classList.toggle('active', name===t);
+  });
+}
+
+function startAudit() {
+  const name = document.getElementById('inp-name').value.trim() || 'Unnamed Restaurant';
+  const auditor = document.getElementById('inp-auditor').value.trim() || 'Auditor';
+  const location = document.getElementById('inp-location').value.trim() || '';
+  const date = document.getElementById('inp-date').value || today;
+  const type = document.getElementById('inp-type').value;
+  auditInfo = {name, auditor, location, date, type};
+  state = {};
+  SECTIONS.forEach((s,si) => s.items.forEach((_,ii) => { state[si+'_'+ii] = null; }));
+  renderChecklist();
+  document.getElementById('audit-placeholder').style.display = 'none';
+  document.getElementById('checklist').style.display = 'block';
+  document.getElementById('summary').classList.remove('show');
+  document.getElementById('rest-label').textContent = name + (location ? ' — '+location : '') + ' · ' + date;
+  switchTab('audit');
+  updateProgress();
+}
+
+function renderChecklist() {
+  const el = document.getElementById('checklist');
+  el.innerHTML = '';
+  SECTIONS.forEach((sec, si) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'section';
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    hdr.innerHTML = `<span class="section-title">${sec.title}</span><div class="section-meta"><span class="section-score" id="sec-score-${si}"></span><span class="chevron open" id="chev-${si}">▼</span></div>`;
+    hdr.onclick = () => toggleSection(si);
+    const items = document.createElement('div');
+    items.className = 'items';
+    items.id = 'sec-items-'+si;
+    sec.items.forEach((item, ii) => {
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<div class="item-left">${item.critical ? '<span class="item-critical">⚠ Critical</span><br>' : ''}<span class="item-q">${item.q}</span><div id="note-wrap-${si}_${ii}" style="display:none"><textarea class="note-input" rows="2" placeholder="Note the violation details..." id="note-${si}_${ii}"></textarea></div></div><div class="btn-group"><button class="btn-audit" id="btn-p-${si}_${ii}" onclick="setAnswer(${si},${ii},'pass')" title="Pass">✓</button><button class="btn-audit" id="btn-f-${si}_${ii}" onclick="setAnswer(${si},${ii},'fail')" title="Fail">✗</button><button class="btn-audit" id="btn-n-${si}_${ii}" onclick="setAnswer(${si},${ii},'na')" title="N/A">—</button></div>`;
+      items.appendChild(row);
+    });
+    wrap.appendChild(hdr);
+    wrap.appendChild(items);
+    el.appendChild(wrap);
+    if(si > 0) {
+      items.style.display = 'none';
+      document.getElementById('chev-'+si).classList.remove('open');
+    }
+  });
+}
+
+function toggleSection(si) {
+  const items = document.getElementById('sec-items-'+si);
+  const chev = document.getElementById('chev-'+si);
+  const open = items.style.display !== 'none';
+  items.style.display = open ? 'none' : 'block';
+  chev.classList.toggle('open', !open);
+}
+
+function setAnswer(si, ii, val) {
+  const key = si+'_'+ii;
+  state[key] = state[key] === val ? null : val;
+  ['pass','fail','na'].forEach(v => {
+    const b = document.getElementById('btn-'+v[0]+'-'+key);
+    if(b) b.className = 'btn-audit' + (state[key]===v ? ' '+v : '');
+  });
+  const nw = document.getElementById('note-wrap-'+key);
+  if(nw) nw.style.display = state[key]==='fail' ? 'block' : 'none';
+  updateProgress();
+  updateSectionScore(si);
+}
+
+function updateSectionScore(si) {
+  let p=0, f=0;
+  SECTIONS[si].items.forEach((_,ii) => {
+    const v = state[si+'_'+ii];
+    if(v==='pass') p++;
+    else if(v==='fail') f++;
+  });
+  const el = document.getElementById('sec-score-'+si);
+  if(el) el.textContent = (p||f) ? `${p}✓ ${f}✗` : '';
+}
+
+function updateProgress() {
+  const total = Object.keys(state).length;
+  const answered = Object.values(state).filter(v=>v!==null).length;
+  const passed = Object.values(state).filter(v=>v==='pass').length;
+  const pct = total ? Math.round(answered/total*100) : 0;
+  document.getElementById('prog-text').textContent = answered+' of '+total+' answered';
+  document.getElementById('prog-pct').textContent = pct+'%';
+  document.getElementById('prog-fill').style.width = pct+'%';
+  const scorable = Object.values(state).filter(v=>v==='pass'||v==='fail').length;
+  if(scorable > 0) {
+    const score = Math.round(passed/scorable*100);
+    const pill = document.getElementById('live-score');
+    pill.textContent = 'Score: '+score;
+    pill.style.background = score>=80?'#E1F5EE':score>=60?'#FAEEDA':'#FAECE7';
+    pill.style.color = score>=80?'#085041':score>=60?'#633806':'#712B13';
+  }
+  if(answered === total && total > 0) showSummary();
+}
+
+function showSummary() {
+  let pass=0, fail=0, na=0;
+  const fails = [];
+  SECTIONS.forEach((sec,si) => {
+    sec.items.forEach((item,ii) => {
+      const v = state[si+'_'+ii];
+      const note = document.getElementById('note-'+si+'_'+ii)?.value || '';
+      if(v==='pass') pass++;
+      else if(v==='fail') { fail++; fails.push({q:item.q, critical:item.critical, note, section:sec.title}); }
+      else if(v==='na') na++;
+    });
+  });
+  const scorable = pass+fail;
+  const score = scorable ? Math.round(pass/scorable*100) : 0;
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-na').textContent = na;
+  const circle = document.getElementById('score-circle');
+  const verdict = document.getElementById('score-verdict');
+  if(score >= 80) {
+    circle.className='score-circle';
+    verdict.textContent='Pass — Good standard';
+    verdict.style.cssText='background:#E1F5EE;color:#085041';
+  } else if(score >= 60) {
+    circle.className='score-circle warn';
+    verdict.textContent='Marginal — Improvement needed';
+    verdict.style.cssText='background:#FAEEDA;color:#633806';
+  } else {
+    circle.className='score-circle danger';
+    verdict.textContent='Fail — Urgent action required';
+    verdict.style.cssText='background:#FAECE7;color:#712B13';
+  }
+  const fw = document.getElementById('failures-wrap');
+  if(fails.length) {
+    let html = '<div class="failures-title">Violations found ('+fails.length+')</div>';
+    fails.forEach(f => {
+      html += `<div class="fail-item"><div class="fail-dot${f.critical?' crit':''}"></div><div><strong>${f.section}:</strong> ${f.q}${f.note?'<br><span style="color:#aaa;font-size:11px;font-style:italic">'+f.note+'</span>':''}</div></div>`;
+    });
+    fw.innerHTML = html;
+  } else {
+    fw.innerHTML = '<p style="font-size:13px;color:#1D9E75;text-align:center;padding:12px 0;font-weight:600">No violations found — Excellent!</p>';
+  }
+  document.getElementById('summary').classList.add('show');
+  history.unshift({name:auditInfo.name, date:auditInfo.date, score, pass, fail, location:auditInfo.location});
+  renderHistory();
+  setTimeout(() => document.getElementById('summary').scrollIntoView({behavior:'smooth'}), 100);
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if(!history.length) { el.innerHTML='<div class="history-empty">No completed audits yet.</div>'; return; }
+  el.innerHTML = history.map(h => {
+    const color = h.score>=80?'#1D9E75':h.score>=60?'#EF9F27':'#E24B4A';
+    return `<div class="history-card"><div class="hc-top"><span class="hc-name">${h.name}</span><span class="hc-score" style="color:${color}">${h.score}/100</span></div><div class="hc-meta">${h.date}${h.location?' · '+h.location:''} &nbsp;·&nbsp; ${h.pass} passed, ${h.fail} failed</div><div class="hc-bar"><div class="hc-bar-fill" style="width:${h.score}%;background:${color}"></div></div></div>`;
+  }).join('');
+}
+
+function printReport() {
+  window.print();
+}
+
+function resetAudit() {
+  document.getElementById('audit-placeholder').style.display = 'block';
+  document.getElementById('checklist').style.display = 'none';
+  document.getElementById('summary').classList.remove('show');
+  document.getElementById('rest-label').textContent = 'No audit in progress';
+  document.getElementById('live-score').textContent = 'Score: —';
+  document.getElementById('live-score').style.cssText = '';
+  document.getElementById('prog-text').textContent = '0 of 0 answered';
+  document.getElementById('prog-pct').textContent = '0%';
+  document.getElementById('prog-fill').style.width = '0%';
+  switchTab('setup');
+}
+</script>
+</body>
+</html>
